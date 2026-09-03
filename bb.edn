@@ -5,4 +5,13 @@
 
   build
   {:doc "create a production shadow-cljs build"
-   :task (shell "pnpm exec shadow-cljs release app")}}}
+   :task (shell "pnpm exec shadow-cljs release app")}
+  
+  css:dev
+  {:doc "run tailwind cli process"
+   :task (shell
+          "npx @tailwindcss/cli -i ./src/css/global.css -o ./resources/public/css/main.css --watch")}
+
+  css:release
+  {:doc "run tailwind cli build process with minification"
+   :task (shell "npx @tailwindcss/cli -i ./src/css/global.css -o ./resources/public/css/main.css --minify")}}}

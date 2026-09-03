@@ -10,14 +10,14 @@
   thheller/shadow-cljs
   {:mvn/version "3.5.0"}
   
+  cider/cider-nrepl
+  {:mvn/version "0.62.2"}
+  
   no.cjohansen/replicant
   {:mvn/version "2026.07.1"}
-  
-  metosin/reitit
-  {:mvn/version "0.10.1"}
- 
+
   ;; Markdown -> Configurable Hiccup
   ;; https://github.com/nextjournal/markdown
   
-  com.lambdaisland/ornament
-  {:mvn/version "1.17.150"}}}
+  metosin/reitit
+  {:mvn/version "0.10.1"}}}
