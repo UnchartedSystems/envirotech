@@ -1,0 +1,8 @@
+{:tasks
+ {dev
+  {:doc "run shadow-cljs in watch mode"
+   :task (shell "pnpm exec shadow-cljs watch app")}
+
+  build
+  {:doc "create a production shadow-cljs build"
+   :task (shell "pnpm exec shadow-cljs release app")}}}
