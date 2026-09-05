@@ -1,14 +1,19 @@
-(ns envirotech.home)
+(ns envirotech.home
+  (:require [envirotech.misc :refer [lorum]]))
 
-(defn root []
+(def root
   [:div
    [:section
-    [:h1 "Brief Description"]]
+    [:h1 "Brief Description"]
+    lorum]
    [:section
-    [:h2 "Bitumen"]]
+    [:h2 "Bitumen"]
+    lorum]
    [:section
-    [:h2 "Hydrogen"]]
+    [:h2 "Hydrogen"]
+    lorum]
    [:section
-    [:h2 "News"]]
+    [:h2 "News"]
+    lorum]
    #_[:section
     [:h2 "Partners"]]])

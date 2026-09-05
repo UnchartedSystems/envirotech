@@ -1,11 +1,13 @@
 (ns envirotech.core
-  (:require [replicant.dom :as r]
-            [reitit.frontend.easy :as rfe]
-            [envirotech.routes :as routes]))
+  (:require [dataspex.core :as dataspex]
+            [envirotech.routes :as routes]
+            [replicant.dom :as r]
+            [reitit.frontend.easy :as rfe]))
 
 (defonce current-route (atom nil))
+(dataspex/inspect "route" current-route)
 
-(def bookends-style ["bg-neutral-900" "text-white"])
+(def bookends-style ["bg-neutral-900" "text-white" "grid" "grid-cols-2" "p-3"])
 
 (defn nav-entry [current-name route-name label]
   (if (not= current-name route-name)
@@ -17,14 +19,19 @@
 
 (defn header [current-name]
   [:header {:class bookends-style}
-   [:h2
-    [:a {:href (routes/href ::routes/home) :aria-label "page"}
-     "Envirotech"]]
-   [:nav {:aria-label "Primary navigation"}
-      (nav-entry current-name ::routes/bitumen "Bitumen")
-      (nav-entry current-name ::routes/hydrogen "Hydrogen")]])
+   [:div {:class ["grid" "grid-cols-2" "w-fit"]}
+    [:img {:src "/envirotech-logo.svg"
+           :alt "envirotech logo"
+           :class ["h-13" ]}]
+    [:h2
+     [:a {:href (routes/href ::routes/home) :aria-label "page"}
+      "Envirotech"]]]
+   [:nav {:class ["grid" "grid-rows-2"]
+          :aria-label "Primary navigation"}
+    (nav-entry current-name ::routes/bitumen "Bitumen")
+    (nav-entry current-name ::routes/hydrogen "Hydrogen")]])
 
-(defn footer []
+(def footer
   [:footer {:class bookends-style}
    [:h2 "Contact Us"]])
 
@@ -33,9 +40,9 @@
     (list
      (header name)
      (if view
-       (view)
+       view
        (routes/not-found))
-     (footer))))
+     footer)))
 
 (defn render! []
   (r/render
@@ -58,10 +65,8 @@
 (defn style-roots []
   ;; canvas element styling
   (.add (.-classList (js/document.getElementById "background"))
-        "fixed" "inset-0"
-        "-z-10"
-        "w-full" "h-dvh"
-        "bg-green-800")
+        "fixed" "inset-0" "-z-10"
+        "w-full" "h-dvh" "bg-emerald-800")
   ;; main element styling
   (.add (.-classList (js/document.getElementById "content"))
         "mx-auto" "lg:mt-16"
@@ -73,4 +78,3 @@
 (defn init! []
   (style-roots)
   (start-router!))
-
