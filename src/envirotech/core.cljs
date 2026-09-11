@@ -2,51 +2,62 @@
   (:require [dataspex.core :as dataspex]
             [envirotech.routes :as routes]
             [replicant.dom :as r]
-            [reitit.frontend.easy :as rfe]))
+            [reitit.frontend.easy :refer [href] :as rfe]))
 
 (defonce current-route (atom nil))
 (dataspex/inspect "route" current-route)
 
-(def bookends-style ["bg-neutral-900" "text-white" "grid" "grid-cols-2" "p-3"])
-
 (defn nav-entry [current-name route-name label]
   (if (not= current-name route-name)
-    [:a {:href (routes/href route-name) :aria-label "page"}
+    [:a
+     {:href (href route-name)
+      :aria-label "page"}
      label]
     ;; Default Home Link
-    [:a {:href (routes/href ::routes/home) :aria-label "page"}
+    [:a
+     {:href (href :home)
+      :aria-label "page"}
      "Home"]))
 
 (defn header [current-name]
-  [:header {:class bookends-style}
-   [:div {:class ["grid" "grid-cols-2" "w-fit"]}
-    [:img {:src "/envirotech-logo.svg"
-           :alt "envirotech logo"
-           :class ["h-13" ]}]
-    [:h2
-     [:a {:href (routes/href ::routes/home) :aria-label "page"}
-      "Envirotech"]]]
-   [:nav {:class ["grid" "grid-rows-2"]
-          :aria-label "Primary navigation"}
-    (nav-entry current-name ::routes/bitumen "Bitumen")
-    (nav-entry current-name ::routes/hydrogen "Hydrogen")]])
+  [:header
+   {:class ["grid" "grid-cols-[auto_minmax(0,1fr)_auto]" "gap-2"]}
+   [:img
+    {:class ["max-md:h-13" "md:h-15" "w-fit"]
+     :src "/envirotech-logo.svg"
+     :alt "envirotech logo"}]
+   [:h2
+    {:class ["flex" "items-center"]}
+    [:a
+     {:class ["text-left" "pl-3"]
+      :href (href :home)
+      :aria-label "page"}
+     "Envirotech"]]
+   [:nav
+    {:class ["grid" "grid-rows-2" "flex" "items-center" "pr-5"]
+     :aria-label "Primary navigation"}
+    (nav-entry current-name :bitumen "Bitumen")
+    (nav-entry current-name :hydrogen "Hydrogen")]])
 
 (def footer
-  [:footer {:class bookends-style}
-   [:h2 "Contact Us"]])
+  [:footer
+   [:h2 "Contact Us"]
+   [:p "inquiries@envirotechdme.com"]])
 
 (defn app [route-match]
   (let [{:keys [name view]} (:data route-match)]
     (list
      (header name)
      (if view
-       view
+       (if (fn? view)
+         (view)
+         view)
        (routes/not-found))
      footer)))
 
 (defn render! []
   (r/render
-   (js/document.getElementById "content")
+   (js/document.getElementById "page")
    (app @current-route)))
 
 (defn on-navigate [route-match _history]
@@ -62,19 +73,5 @@
 (defn ^:dev/after-load reload! []
   (start-router!))
 
-(defn style-roots []
-  ;; canvas element styling
-  (.add (.-classList (js/document.getElementById "background"))
-        "fixed" "inset-0" "-z-10"
-        "w-full" "h-dvh" "bg-emerald-800")
-  ;; main element styling
-  (.add (.-classList (js/document.getElementById "content"))
-        "mx-auto" "lg:mt-16"
-        "w-full" "max-w-5xl"
-        "flex" "flex-col"
-        "rounded-sm" "overflow-hidden"
-        "bg-white" "shadow-lg"))
-
 (defn init! []
-  (style-roots)
   (start-router!))

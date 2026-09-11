@@ -1,2 +1,34 @@
 @import "tailwindcss" source(none);
 @source "../envirotech";
+@source "../../resources/public/index.html";
+
+@theme {
+    /* Panel Spacing Modifiers */
+  --spacing-p2xl: 3.5rem;
+  --spacing-pxl: 2.5rem;
+  --spacing-plg: 1.75rem;
+  --spacing-pmd: 1rem;
+  --spacing-psm: 0.75rem;
+
+  --spacing-frame: 1rem;
+}
+
+@layer base {
+    .background {
+	@apply fixed inset-0 -z-10 w-full h-dvh;
+	@apply bg-emerald-800;
+    }
+
+    .page {
+	@apply mx-auto md:my-12 lg:my-16;
+	@apply w-full max-w-4xl;
+	@apply flex flex-col;
+	@apply rounded-sm overflow-hidden;
+	@apply bg-white shadow-lg;
+    }
+    
+    header, footer {
+	padding: var(--spacing-frame);
+	@apply bg-neutral-900 text-white;
+    }
+}
