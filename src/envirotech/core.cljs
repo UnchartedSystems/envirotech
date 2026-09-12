@@ -9,8 +9,9 @@
 
 (defn nav-entry [current-name route-name label]
   [:a
-   {:href (href route-name)
-    :aria-label "page"}
+   {:class ["hover:underline"]
+    :href (href route-name)
+    :aria-label (str label " page")}
    label])
 
 (defn header [current-name]
@@ -23,7 +24,7 @@
    [:h2
     {:class ["flex" "items-center"]}
     [:a
-     {:class ["text-left" "pl-3"]
+     {:class ["text-left" "ml-3"]
       :href (href :home)
       :aria-label "page"}
      "Envirotech"]]

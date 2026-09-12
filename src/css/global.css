@@ -42,10 +42,10 @@
 
     .page {
 	@apply mx-auto md:my-12 lg:my-16;
-	@apply w-full max-w-4xl;
+	@apply w-full md:max-w-3xl lg:max-w-4xl;
 	@apply flex flex-col;
 	@apply rounded-sm overflow-hidden;
-	@apply bg-white shadow-lg;
+	@apply bg-white shadow-xl;
     }
     
     header, footer {

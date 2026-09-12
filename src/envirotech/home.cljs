@@ -1,19 +1,20 @@
 (ns envirotech.home
-  (:require [envirotech.misc :refer [lorum-sm lorum-md lorum-lg]]
+  (:require [envirotech.misc :refer [lorum-sm lorum-tmd]]
             [reitit.frontend.easy :refer [href]]))
 
 
 (defn tech [name route description]
   [:a
-   {:class ["group" "rounded-md"
-            "hover:bg-neutral-100" "md:flex-1"
-            "w-fit" "max-md:pb-psm"]
+   {:class ["group" "hover:bg-neutral-100"
+            "md:flex-1" "w-fit" "p-frame"]
     :href (href route)
-    :aria-label "page"}
+    :aria-label (str name " page")}
    [:h3
-    {:class ["group-hover:underline"]}
+    {:class ["group-hover:text-blue-600"]}
     name]
-   description])
+   [:p
+    {:class ["text-pretty"]}
+    description]])
 
 (defn root []
   [:main
@@ -25,12 +26,9 @@
      "Technology for the future of energy."]
     lorum-sm]
    [:section
-    {:class ["p-frame"]}
-    [:div
-     {:class ["flex" "flex-col" "md:flex-row" "min-w-0"]}
-     (tech "Bitumen" :bitumen lorum-md)
-     (tech "Hydrogen" :hydrogen lorum-md)
-     ]]
+    {:class ["flex" "flex-col" "md:flex-row" "min-w-0"]}
+    (tech "Bitumen" :bitumen lorum-tmd)
+    (tech "Hydrogen" :hydrogen lorum-tmd)]
    #_[:section
       [:h2 "News"]]
    #_[:section
