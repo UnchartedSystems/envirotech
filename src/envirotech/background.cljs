@@ -1,5 +1,5 @@
 (ns envirotech.background
-  (:require ["twgl.js" :as twgl]))
+  (:require ["twgl.js/dist/7.x/twgl.js" :as twgl]))
 
 (def vertex-shader
   "attribute vec4 position;

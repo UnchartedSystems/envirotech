@@ -1,12 +1,10 @@
 (ns envirotech.core
-  (:require [dataspex.core :as dataspex]
-            [envirotech.background :as background]
+  (:require [envirotech.background :as background]
             [envirotech.routes :as routes]
             [replicant.dom :as r]
             [reitit.frontend.easy :refer [href] :as rfe]))
 
 (defonce current-route (atom nil))
-(dataspex/inspect "route" current-route)
 
 (defn nav-entry [current-name route-name label]
   [:a

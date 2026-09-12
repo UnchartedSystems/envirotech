@@ -1,11 +1,17 @@
 {:tasks
- {dev
+ {:requires ([babashka.fs :as fs])
+
+  dev
   {:doc "run shadow-cljs in watch mode"
    :task (shell "pnpm exec shadow-cljs watch app")}
 
   build
-  {:doc "create a production shadow-cljs build"
-   :task (shell "pnpm exec shadow-cljs release app")}
+  {:doc "build the complete production site in dist/"
+   :task (do
+           (fs/delete-tree "dist")
+           (shell "rsync -a --exclude=/js/ --exclude=/css/main.css --exclude=.DS_Store resources/public/ dist/")
+           (run 'css:release)
+           (shell "pnpm exec shadow-cljs release app"))}
   
   css:dev
   {:doc "run tailwind cli process"
@@ -13,5 +19,5 @@
           "npx @tailwindcss/cli -i ./src/css/global.css -o ./resources/public/css/main.css --watch")}
 
   css:release
-  {:doc "run tailwind cli build process with minification"
-   :task (shell "npx @tailwindcss/cli -i ./src/css/global.css -o ./resources/public/css/main.css --minify")}}}
+  {:doc "build minified production CSS in dist/"
+   :task (shell "npx @tailwindcss/cli -i ./src/css/global.css -o ./dist/css/main.css --minify")}}}
