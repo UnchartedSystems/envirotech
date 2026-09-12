@@ -17,7 +17,7 @@
   [:header
    {:class ["grid" "grid-cols-[auto_minmax(0,1fr)_auto]" "gap-2"]}
    [:img
-    {:class ["max-md:h-13" "md:h-15" "w-fit"]
+    {:class ["max-md:size-13" "md:size-15" "w-fit"]
      :src "/envirotech-logo.svg"
      :alt "envirotech logo"}]
    [:h2

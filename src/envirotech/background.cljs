@@ -1,64 +1,64 @@
 (ns envirotech.background
-  (:require ["twgl.js/dist/7.x/twgl.js" :as twgl]))
+  (:require [shadow.resource :as resource]))
 
 (def vertex-shader
-  "attribute vec4 position;
-   void main() {
-     gl_Position = position;
-   }")
+  (resource/inline "shaders/vertex.glsl"))
 
-(def fragment-shader
-  "#ifdef GL_FRAGMENT_PRECISION_HIGH
-   precision highp float;
-   #else
-   precision mediump float;
-   #endif
-   uniform vec2 resolution;
-   uniform float time;
-
-   float hash(vec2 p) {
-     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
-   }
-
-   float noise(vec2 p) {
-     vec2 cell = floor(p);
-     vec2 f = fract(p);
-     vec2 u = f * f * (3.0 - 2.0 * f);
-     return mix(mix(hash(cell), hash(cell + vec2(1.0, 0.0)), u.x),
-                mix(hash(cell + vec2(0.0, 1.0)),
-                    hash(cell + vec2(1.0, 1.0)), u.x), u.y);
-   }
-
-   void main() {
-     vec2 p = gl_FragCoord.xy / resolution.y * 3.0;
-     p += vec2(time * 0.035, time * 0.012);
-     float clouds = 0.0;
-     float weight = 0.5;
-     for (int i = 0; i < 4; i++) {
-       clouds += weight * noise(p);
-       p = p * 2.0 + vec2(17.0, 9.0);
-       weight *= 0.5;
-     }
-     float coverage = smoothstep(0.35, 0.75, clouds);
-     vec3 emerald = vec3(0.025, 0.32, 0.25);
-     vec3 cloud = vec3(0.82, 0.91, 0.87);
-     gl_FragColor = vec4(mix(emerald, cloud, coverage), 1.0);
-   }")
+(def clouds-shader
+  (resource/inline "shaders/clouds.glsl"))
 
 ;; Only renderer/clock bookkeeping persists; the shader has no frame history.
 (defonce renderer (atom nil))
 
+(defn- compile-shader [gl type source]
+  (let [shader (.createShader gl type)]
+    (.shaderSource gl shader source)
+    (.compileShader gl shader)
+    (if (.getShaderParameter gl shader (.-COMPILE_STATUS gl))
+      shader
+      (let [log (.getShaderInfoLog gl shader)]
+        (.deleteShader gl shader)
+        (throw (js/Error. (str "Shader compile failed: " log)))))))
+
+(defn- link-program [gl vs-source fs-source]
+  (let [vs (compile-shader gl (.-VERTEX_SHADER gl) vs-source)
+        fs (compile-shader gl (.-FRAGMENT_SHADER gl) fs-source)
+        program (.createProgram gl)]
+    (.attachShader gl program vs)
+    (.attachShader gl program fs)
+    (.linkProgram gl program)
+    (if (.getProgramParameter gl program (.-LINK_STATUS gl))
+      {:program program :vs vs :fs fs}
+      (let [log (.getProgramInfoLog gl program)]
+        (.deleteProgram gl program)
+        (.deleteShader gl vs)
+        (.deleteShader gl fs)
+        (throw (js/Error. (str "Program link failed: " log)))))))
+
+(defn- resize-canvas-to-display-size! [canvas]
+  (let [display-width (.-clientWidth canvas)
+        display-height (.-clientHeight canvas)]
+    (when (or (not= (.-width canvas) display-width)
+              (not= (.-height canvas) display-height))
+      (set! (.-width canvas) display-width)
+      (set! (.-height canvas) display-height))))
+
 (defn- draw! []
-  (when-let [{:keys [gl program buffers elapsed]} @renderer]
-    (twgl/resizeCanvasToDisplaySize (.-canvas gl))
-    (.viewport gl 0 0 (.-width (.-canvas gl)) (.-height (.-canvas gl)))
-    (.useProgram gl (.-program program))
-    (twgl/setBuffersAndAttributes gl program buffers)
-    (twgl/setUniforms program
-                      #js {:time elapsed
-                           :resolution #js [(.-width (.-canvas gl))
-                                            (.-height (.-canvas gl))]})
-    (twgl/drawBufferInfo gl buffers)))
+  (when-let [{:keys [gl program position-loc resolution-loc time-loc
+                      buffer elapsed]} @renderer]
+    (let [canvas (.-canvas gl)]
+      (resize-canvas-to-display-size! canvas)
+      (.viewport gl 0 0 (.-width canvas) (.-height canvas))
+      (.useProgram gl program)
+
+      (.bindBuffer gl (.-ARRAY_BUFFER gl) buffer)
+      (.enableVertexAttribArray gl position-loc)
+      (.vertexAttribPointer gl position-loc 3 (.-FLOAT gl) false 0 0)
+
+      (.uniform2f gl resolution-loc (.-width canvas) (.-height canvas))
+      (.uniform1f gl time-loc elapsed)
+
+      (.drawArrays gl (.-TRIANGLES gl) 0 6))))
 
 (defn- frame! [timestamp]
   (when (:running? @renderer)
@@ -82,16 +82,14 @@
           (swap! renderer assoc :request (js/requestAnimationFrame frame!)))))))
 
 (defn stop! []
-  (when-let [{:keys [gl program buffers request resize]} @renderer]
+  (when-let [{:keys [gl program vs fs buffer request resize]} @renderer]
     (when request (js/cancelAnimationFrame request))
     (when resize (.removeEventListener js/window "resize" resize))
-    (when buffers
-      (doseq [attribute (array-seq (js/Object.values (.-attribs buffers)))]
-        (.deleteBuffer gl (.-buffer attribute))))
+    (when buffer (.deleteBuffer gl buffer))
     (when program
-      (doseq [shader (array-seq (.getAttachedShaders gl (.-program program)))]
-        (.deleteShader gl shader))
-      (.deleteProgram gl (.-program program)))
+      (when vs (.deleteShader gl vs))
+      (when fs (.deleteShader gl fs))
+      (.deleteProgram gl program))
     (reset! renderer nil)))
 
 (defn init! []
@@ -99,16 +97,27 @@
   (when-let [canvas (js/document.getElementById "background")]
     (try
       (when-let [gl (.getContext canvas "webgl")]
-        (when-let [program (twgl/createProgramInfo gl #js [vertex-shader fragment-shader])]
-          (reset! renderer {:gl gl :program program :elapsed 0
-                            :running? false :last-time nil :request nil})
-          (let [buffers (twgl/createBufferInfoFromArrays
-                         gl #js {:position #js [-1 -1 0, 1 -1 0, -1 1 0,
-                                                -1 1 0, 1 -1 0, 1 1 0]})
-                resize (fn [] (draw!))]
-            (swap! renderer assoc :buffers buffers :resize resize)
-            (.addEventListener js/window "resize" resize)
-            (draw!))))
+        (let [{:keys [program vs fs]} (link-program gl vertex-shader clouds-shader)
+              position-loc (.getAttribLocation gl program "position")
+              resolution-loc (.getUniformLocation gl program "resolution")
+              time-loc (.getUniformLocation gl program "time")
+              buffer (.createBuffer gl)
+              vertices (js/Float32Array.
+                        #js [-1 -1 0, 1 -1 0, -1 1 0,
+                             -1 1 0, 1 -1 0, 1 1 0])
+              resize (fn [] (draw!))]
+          (.bindBuffer gl (.-ARRAY_BUFFER gl) buffer)
+          (.bufferData gl (.-ARRAY_BUFFER gl) vertices (.-STATIC_DRAW gl))
+
+          (reset! renderer {:gl gl :program program :vs vs :fs fs
+                            :position-loc position-loc
+                            :resolution-loc resolution-loc
+                            :time-loc time-loc
+                            :buffer buffer
+                            :elapsed 0 :running? false :last-time nil
+                            :request nil :resize resize})
+          (.addEventListener js/window "resize" resize)
+          (draw!)))
       (catch :default error
         (stop!)
         (js/console.warn "Cloud background unavailable" error)))))

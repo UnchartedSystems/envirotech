@@ -9,7 +9,7 @@
             "md:flex-1" "w-fit" "p-frame"]
     :href (href route)
     :aria-label (str name " page")}
-   [:h3
+   [:h2
     {:class ["group-hover:text-blue-600"]}
     name]
    [:p
@@ -26,6 +26,7 @@
      "Technology for the future of energy."]
     lorum-sm]
    [:section
+    ;; gray divider: "max-md:divide-y" "md:divide-x" "divide-black/20"
     {:class ["flex" "flex-col" "md:flex-row" "min-w-0"]}
     (tech "Bitumen" :bitumen lorum-tmd)
     (tech "Hydrogen" :hydrogen lorum-tmd)]

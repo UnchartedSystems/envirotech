@@ -20,7 +20,6 @@
     --container-xl: 36rem;
     --container-3xl: 48rem;
     --container-4xl: 56rem;
-    --radius-sm: 0.25rem;
     --default-font-family: var(--font-sans);
     --default-mono-font-family: var(--font-mono);
     --spacing-p2xl: 3.5rem;
@@ -253,6 +252,10 @@
   .text-white {
     color: var(--color-white);
   }
+  .shadow {
+    --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
   @media (hover: hover) {
     .group-hover\:text-blue-600:is(:where(.group):hover *) {
       color: var(--color-blue-600);
@@ -265,12 +268,14 @@
     }
   }
   @media (width < 48rem) {
-    .max-md\:h-13 {
+    .max-md\:size-13 {
+      width: calc(var(--spacing) * 13);
       height: calc(var(--spacing) * 13);
     }
   }
   @media (width >= 48rem) {
-    .md\:h-15 {
+    .md\:size-15 {
+      width: calc(var(--spacing) * 15);
       height: calc(var(--spacing) * 15);
     }
     .md\:flex-1 {
@@ -319,7 +324,6 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    border-radius: var(--radius-sm);
     background-color: var(--color-white);
     --tw-shadow: 0 20px 25px -5px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 8px 10px -6px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
     box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
