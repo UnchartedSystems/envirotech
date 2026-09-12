@@ -2,6 +2,19 @@
   (:require [envirotech.misc :refer [lorum-sm lorum-md lorum-lg]]
             [reitit.frontend.easy :refer [href]]))
 
+
+(defn tech [name route description]
+  [:a
+   {:class ["group" "rounded-md"
+            "hover:bg-neutral-100" "md:flex-1"
+            "w-fit" "max-md:pb-psm"]
+    :href (href route)
+    :aria-label "page"}
+   [:h3
+    {:class ["group-hover:underline"]}
+    name]
+   description])
+
 (defn root []
   [:main
    [:section
@@ -15,19 +28,9 @@
     {:class ["p-frame"]}
     [:div
      {:class ["flex" "flex-col" "md:flex-row" "min-w-0"]}
-     [:a
-      {:class ["hover:bg-neutral-100" "md:flex-1"
-               "max-md:pb-psm"]
-       :href (href :bitumen)
-       :aria-label "page"}
-      [:h3 "Bitumen"]
-      lorum-md]
-     [:a
-      {:class ["hover:bg-neutral-100" "md:flex-1"]
-       :href (href :hydrogen)
-       :aria-label "page"}
-      [:h3 "Hydrogen"]
-      lorum-md]]]
+     (tech "Bitumen" :bitumen lorum-md)
+     (tech "Hydrogen" :hydrogen lorum-md)
+     ]]
    #_[:section
       [:h2 "News"]]
    #_[:section

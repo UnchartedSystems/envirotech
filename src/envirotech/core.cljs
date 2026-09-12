@@ -8,16 +8,10 @@
 (dataspex/inspect "route" current-route)
 
 (defn nav-entry [current-name route-name label]
-  (if (not= current-name route-name)
-    [:a
-     {:href (href route-name)
-      :aria-label "page"}
-     label]
-    ;; Default Home Link
-    [:a
-     {:href (href :home)
-      :aria-label "page"}
-     "Home"]))
+  [:a
+   {:href (href route-name)
+    :aria-label "page"}
+   label])
 
 (defn header [current-name]
   [:header

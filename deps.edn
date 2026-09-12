@@ -16,8 +16,8 @@
   no.cjohansen/replicant
   {:mvn/version "2026.07.1"}
 
-  ;; Markdown -> Configurable Hiccup
-  ;; https://github.com/nextjournal/markdown
+  io.github.nextjournal/markdown
+  {:mvn/version "0.7.225"}
   
   metosin/reitit
   {:mvn/version "0.10.1"}
