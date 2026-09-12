@@ -13,7 +13,28 @@
   --spacing-frame: 1rem;
 }
 
+/* Where does this go? */
+/* @apply text-lg/normal md:text-base/normal; */
+
+
 @layer base {
+    /* Article typography: add shared styles to these scoped hooks. */
+    .article-content {
+        /* Shared article styles */
+	@apply [&>p+p]:mt-[1em];
+	@apply text-pretty max-w-[65ch];
+    }
+
+    .article-content h2 {
+        /* Section heading styles */
+	@apply mt-5 mb-2;
+    }
+
+    .article-content p {
+        /* Paragraph styles */
+
+    }
+
     .background {
 	@apply fixed inset-0 -z-10 w-full h-dvh;
 	@apply bg-emerald-800;

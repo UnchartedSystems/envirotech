@@ -281,6 +281,17 @@
   }
 }
 @layer base {
+  .article-content {
+    &>p+p {
+      margin-top: 1em;
+    }
+    max-width: 65ch;
+    text-wrap: pretty;
+  }
+  .article-content h2 {
+    margin-top: calc(var(--spacing) * 5);
+    margin-bottom: calc(var(--spacing) * 2);
+  }
   .background {
     position: fixed;
     inset: 0px;
