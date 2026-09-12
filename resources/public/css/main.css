@@ -199,6 +199,9 @@
   .min-w-0 {
     min-width: 0px;
   }
+  .resize {
+    resize: both;
+  }
   .grid-cols-\[auto_minmax\(0\,1fr\)_auto\] {
     grid-template-columns: auto minmax(0,1fr) auto;
   }

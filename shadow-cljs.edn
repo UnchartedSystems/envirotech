@@ -11,6 +11,7 @@
   {:target :browser
    :output-dir "resources/public/js"
    :asset-path "/js"
+   :release {:output-dir "dist/js"}
 
    :devtools
    {:watch-dir "resources/public"

@@ -1,5 +1,6 @@
 (ns envirotech.core
   (:require [dataspex.core :as dataspex]
+            [envirotech.background :as background]
             [envirotech.routes :as routes]
             [replicant.dom :as r]
             [reitit.frontend.easy :refer [href] :as rfe]))
@@ -57,6 +58,7 @@
 
 (defn on-navigate [route-match _history]
   (reset! current-route route-match)
+  (background/set-page! (get-in route-match [:data :name]))
   (set! (.-title js/document)
         (or (get-in route-match [:data :title])
             "Page not found | Envirotech"))
@@ -66,7 +68,9 @@
   (rfe/start! routes/router on-navigate {:use-fragment false}))
 
 (defn ^:dev/after-load reload! []
+  (background/init!)
   (start-router!))
 
 (defn init! []
+  (background/init!)
   (start-router!))
