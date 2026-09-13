@@ -9,6 +9,9 @@
 
   thheller/shadow-cljs
   {:mvn/version "3.5.0"}
+
+  cider/piggieback
+  {:mvn/version "0.7.0"}
   
   cider/cider-nrepl
   {:mvn/version "0.62.2"}

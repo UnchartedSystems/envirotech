@@ -69,8 +69,8 @@ float perlin(vec2 point) {
 
 vec3 let_outer(vec2 frag_coord, float t) {
   {
-    vec2 s = (frag_coord * 5.0) + vec2(0.0, t);
-    return vec3((perlin(s + ((perlin(s + ((perlin(s - sin(t)) + 1.0) * 0.5)) + 1.0) * 0.5)) + 1.0) * 0.5);
+    vec2 s = frag_coord;
+    return vec3((perlin(s * t) + 1.0) * 0.5, (perlin(s * t) + 1.0) * 0.5, (perlin(s / t) + 1.0) * 0.5);
   }
 }
 
@@ -112,3 +112,4 @@ void main() {
   }
   frag_color = vec4(pow_(color, 1.0 / gamma), alpha);
 }
+

@@ -4,7 +4,9 @@
  {8080 "resources/public"}
 
  :nrepl
- {:middleware [cider.nrepl/cider-middleware]}
+ {:middleware [cider.piggieback/wrap-cljs-repl
+               cider.nrepl/cider-middleware]}
+
  
  :builds
  {:app
@@ -12,6 +14,8 @@
    :output-dir "resources/public/js"
    :asset-path "/js"
    :release {:output-dir "dist/js"}
+
+   :build-hooks [(envirotech.bauble/compile-hook)]
 
    :devtools
    {:watch-dir "resources/public"

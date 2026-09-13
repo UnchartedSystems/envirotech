@@ -1,11 +1,12 @@
 (ns envirotech.background
-  (:require [shadow.resource :as resource]))
+  (:require [shadow.resource :as resource])
+  (:require-macros [envirotech.bauble :refer [inline-bauble]]))
 
 (def vertex-shader
   (resource/inline "shaders/vertex.glsl"))
 
-(def clouds-shader
-  (resource/inline "shaders/clouds.glsl"))
+(def background-shader
+  (inline-bauble "test.janet"))
 
 ;; Only renderer/clock bookkeeping persists; the shader has no frame history.
 (defonce renderer (atom nil))
@@ -21,19 +22,25 @@
         (throw (js/Error. (str "Shader compile failed: " log)))))))
 
 (defn- link-program [gl vs-source fs-source]
-  (let [vs (compile-shader gl (.-VERTEX_SHADER gl) vs-source)
-        fs (compile-shader gl (.-FRAGMENT_SHADER gl) fs-source)
-        program (.createProgram gl)]
-    (.attachShader gl program vs)
-    (.attachShader gl program fs)
-    (.linkProgram gl program)
-    (if (.getProgramParameter gl program (.-LINK_STATUS gl))
-      {:program program :vs vs :fs fs}
-      (let [log (.getProgramInfoLog gl program)]
-        (.deleteProgram gl program)
-        (.deleteShader gl vs)
-        (.deleteShader gl fs)
-        (throw (js/Error. (str "Program link failed: " log)))))))
+  (let [vs (compile-shader gl (.-VERTEX_SHADER gl) vs-source)]
+    (try
+      (let [fs (compile-shader gl (.-FRAGMENT_SHADER gl) fs-source)]
+        (try
+          (let [program (.createProgram gl)]
+            (try
+              (.attachShader gl program vs)
+              (.attachShader gl program fs)
+              (.linkProgram gl program)
+              (when-not (.getProgramParameter gl program (.-LINK_STATUS gl))
+                (throw (js/Error. (str "Program link failed: " (.getProgramInfoLog gl program)))))
+              (.detachShader gl program vs)
+              (.detachShader gl program fs)
+              program
+              (catch :default error
+                (.deleteProgram gl program)
+                (throw error))))
+          (finally (.deleteShader gl fs))))
+      (finally (.deleteShader gl vs)))))
 
 (defn- resize-canvas-to-display-size! [canvas]
   (let [display-width (.-clientWidth canvas)
@@ -44,18 +51,18 @@
       (set! (.-height canvas) display-height))))
 
 (defn- draw! []
-  (when-let [{:keys [gl program position-loc resolution-loc time-loc
+  (when-let [{:keys [gl program position-loc viewport-loc time-loc
                       buffer elapsed]} @renderer]
     (let [canvas (.-canvas gl)]
       (resize-canvas-to-display-size! canvas)
-      (.viewport gl 0 0 (.-width canvas) (.-height canvas))
+      (.viewport gl 0 0 (.-drawingBufferWidth gl) (.-drawingBufferHeight gl))
       (.useProgram gl program)
 
       (.bindBuffer gl (.-ARRAY_BUFFER gl) buffer)
       (.enableVertexAttribArray gl position-loc)
       (.vertexAttribPointer gl position-loc 3 (.-FLOAT gl) false 0 0)
 
-      (.uniform2f gl resolution-loc (.-width canvas) (.-height canvas))
+      (.uniform4f gl viewport-loc 0 0 (.-drawingBufferWidth gl) (.-drawingBufferHeight gl))
       (.uniform1f gl time-loc elapsed)
 
       (.drawArrays gl (.-TRIANGLES gl) 0 6))))
@@ -81,43 +88,50 @@
         (when animate?
           (swap! renderer assoc :request (js/requestAnimationFrame frame!)))))))
 
+(defn- dispose! [{:keys [gl program buffer request resize]}]
+  (when request (js/cancelAnimationFrame request))
+  (when resize (.removeEventListener js/window "resize" resize))
+  (when buffer (.deleteBuffer gl buffer))
+  (when program (.deleteProgram gl program)))
+
 (defn stop! []
-  (when-let [{:keys [gl program vs fs buffer request resize]} @renderer]
-    (when request (js/cancelAnimationFrame request))
-    (when resize (.removeEventListener js/window "resize" resize))
-    (when buffer (.deleteBuffer gl buffer))
-    (when program
-      (when vs (.deleteShader gl vs))
-      (when fs (.deleteShader gl fs))
-      (.deleteProgram gl program))
+  (when-let [state @renderer]
+    (dispose! state)
     (reset! renderer nil)))
 
+(defn- prepare-renderer [gl]
+  (let [program (link-program gl vertex-shader background-shader)
+        buffer (.createBuffer gl)]
+    (try
+      (when-not buffer (throw (js/Error. "Could not allocate background buffer")))
+      (.bindBuffer gl (.-ARRAY_BUFFER gl) buffer)
+      (.bufferData gl (.-ARRAY_BUFFER gl)
+                   (js/Float32Array. #js [-1 -1 0, 1 -1 0, -1 1 0,
+                                         -1 1 0, 1 -1 0, 1 1 0])
+                   (.-STATIC_DRAW gl))
+      {:gl gl :program program :buffer buffer
+       :position-loc (.getAttribLocation gl program "position")
+       :viewport-loc (.getUniformLocation gl program "viewport")
+       :time-loc (.getUniformLocation gl program "t")
+       :resize (fn [] (draw!))}
+      (catch :default error
+        (dispose! {:gl gl :program program :buffer buffer})
+        (throw error)))))
+
 (defn init! []
-  (stop!)
   (when-let [canvas (js/document.getElementById "background")]
     (try
-      (when-let [gl (.getContext canvas "webgl")]
-        (let [{:keys [program vs fs]} (link-program gl vertex-shader clouds-shader)
-              position-loc (.getAttribLocation gl program "position")
-              resolution-loc (.getUniformLocation gl program "resolution")
-              time-loc (.getUniformLocation gl program "time")
-              buffer (.createBuffer gl)
-              vertices (js/Float32Array.
-                        #js [-1 -1 0, 1 -1 0, -1 1 0,
-                             -1 1 0, 1 -1 0, 1 1 0])
-              resize (fn [] (draw!))]
-          (.bindBuffer gl (.-ARRAY_BUFFER gl) buffer)
-          (.bufferData gl (.-ARRAY_BUFFER gl) vertices (.-STATIC_DRAW gl))
-
-          (reset! renderer {:gl gl :program program :vs vs :fs fs
-                            :position-loc position-loc
-                            :resolution-loc resolution-loc
-                            :time-loc time-loc
-                            :buffer buffer
-                            :elapsed 0 :running? false :last-time nil
-                            :request nil :resize resize})
-          (.addEventListener js/window "resize" resize)
-          (draw!)))
-      (catch :default error
+      (let [gl (or (.getContext canvas "webgl2" #js {:antialias false :premultipliedAlpha false})
+                   (throw (js/Error. "WebGL2 is unavailable")))
+            prepared (prepare-renderer gl)
+            {:keys [elapsed running?] :or {elapsed 0 running? false}} @renderer]
+        ;; Keep the old renderer alive until the replacement is ready.
         (stop!)
-        (js/console.warn "Cloud background unavailable" error)))))
+        (reset! renderer (assoc prepared :elapsed elapsed :running? running?
+                                :last-time nil :request nil))
+        (.addEventListener js/window "resize" (:resize prepared))
+        (draw!)
+        (when running?
+          (swap! renderer assoc :request (js/requestAnimationFrame frame!))))
+      (catch :default error
+        (js/console.warn "Background shader unavailable" error)))))
