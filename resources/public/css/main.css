@@ -9,7 +9,6 @@
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
     --color-orange-800: oklch(47% 0.157 37.304);
-    --color-emerald-800: oklch(43.2% 0.095 166.913);
     --color-blue-600: oklch(54.6% 0.245 262.881);
     --color-blue-700: oklch(48.8% 0.243 264.376);
     --color-neutral-100: oklch(97% 0 none);
@@ -252,7 +251,10 @@
   .text-white {
     color: var(--color-white);
   }
-  
+  .shadow {
+    --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
   @media (hover: hover) {
     .group-hover\:text-blue-600:is(:where(.group):hover *) {
       color: var(--color-blue-600);
@@ -301,7 +303,7 @@
     z-index: calc(10 * -1);
     height: 100dvh;
     width: 100%;
-    background-color: var(--color-emerald-800);
+    background-color: var(--color-blue-700);
   }
   .page {
     margin-inline: auto;
