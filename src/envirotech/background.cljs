@@ -5,8 +5,10 @@
 (def vertex-shader
   (resource/inline "shaders/vertex.glsl"))
 
-(def background-shader
+(def background-spec
   (inline-bauble "test.janet"))
+
+(def background-shader (:source background-spec))
 
 ;; Only renderer/clock bookkeeping persists; the shader has no frame history.
 (defonce renderer (atom nil))
@@ -41,6 +43,48 @@
                 (throw error))))
           (finally (.deleteShader gl fs))))
       (finally (.deleteShader gl vs)))))
+
+(defn- active-uniforms [gl program]
+  (into {}
+        (for [i (range (.getProgramParameter gl program (.-ACTIVE_UNIFORMS gl)))
+              :let [info (.getActiveUniform gl program i)
+                    name (.-name info)]]
+          [name {:type (.-type info) :size (.-size info)
+                 :location (.getUniformLocation gl program name)}])))
+
+(defn- upload-uniform! [gl name {:keys [type size location]} value]
+  (let [width (condp = type
+                (.-FLOAT gl) 1
+                (.-BOOL gl) 1
+                (.-FLOAT_VEC2 gl) 2
+                (.-FLOAT_VEC3 gl) 3
+                (.-FLOAT_VEC4 gl) 4
+                nil)
+        values (if (sequential? value) value [value])]
+    (when-not (and width (= size 1) (= width (count values))
+                   (if (= type (.-BOOL gl))
+                     (boolean? value)
+                     (every? #(and (number? %) (js/Number.isFinite %)) values)))
+      (throw (js/Error. (str "Invalid or unsupported Bauble uniform: " name))))
+    (condp = type
+      (.-BOOL gl) (.uniform1i gl location (if value 1 0))
+      (.-FLOAT gl) (.uniform1f gl location (first values))
+      (.-FLOAT_VEC2 gl) (.uniform2fv gl location (js/Float32Array. (clj->js values)))
+      (.-FLOAT_VEC3 gl) (.uniform3fv gl location (js/Float32Array. (clj->js values)))
+      (.-FLOAT_VEC4 gl) (.uniform4fv gl location (js/Float32Array. (clj->js values))))))
+
+(defn- initialize-uniforms! [gl program uniforms defaults]
+  (.useProgram gl program)
+  (doseq [[name info] uniforms
+          :when (not (contains? #{"t" "viewport"} name))]
+    (let [value (cond
+                  (contains? defaults name) (get defaults name)
+                  (= name "free_camera_zoom") 1
+                  (= name "free_camera_orbit") [0 0]
+                  (= name "free_camera_target")
+                  (if (= (:type info) (.-FLOAT_VEC2 gl)) [0 0] [0 0 0])
+                  :else (throw (js/Error. (str "Missing Bauble uniform default: " name))))]
+      (upload-uniform! gl name info value))))
 
 (defn- resize-canvas-to-display-size! [canvas]
   (let [display-width (.-clientWidth canvas)
@@ -104,6 +148,7 @@
         buffer (.createBuffer gl)]
     (try
       (when-not buffer (throw (js/Error. "Could not allocate background buffer")))
+      (initialize-uniforms! gl program (active-uniforms gl program) (:uniforms background-spec))
       (.bindBuffer gl (.-ARRAY_BUFFER gl) buffer)
       (.bufferData gl (.-ARRAY_BUFFER gl)
                    (js/Float32Array. #js [-1 -1 0, 1 -1 0, -1 1 0,

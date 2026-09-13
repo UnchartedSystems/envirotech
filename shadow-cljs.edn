@@ -7,8 +7,7 @@
  {:middleware [cider.piggieback/wrap-cljs-repl
                cider.nrepl/cider-middleware]}
 
- 
- :builds
+  :builds
  {:app
   {:target :browser
    :output-dir "resources/public/js"

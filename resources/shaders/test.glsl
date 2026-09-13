@@ -67,15 +67,16 @@ float perlin(vec2 point) {
   return 2.3 * n_xy;
 }
 
-vec3 let_outer(vec2 frag_coord, float t) {
+vec4 let_outer(vec2 Frag_Coord, vec2 resolution, float t) {
   {
-    vec2 s = frag_coord;
-    return vec3((perlin(s * t) + 1.0) * 0.5, (perlin(s * t) + 1.0) * 0.5, (perlin(s / t) + 1.0) * 0.5);
+    vec2 s = ((Frag_Coord / (resolution.y / 2.0)) * 5.0) + vec2(t / 5.0, t / 7.0);
+    float t1 = t / 5.0;
+    return vec4((perlin(s + ((perlin(s + ((perlin(s - sin(t1)) + 1.0) * 0.5)) + 1.0) * 0.5)) + 1.0) * 0.5);
   }
 }
 
-vec4 sample_(vec2 frag_coord, float t) {
-  return vec4(let_outer(frag_coord, t), 1.0);
+vec4 sample_(vec2 Frag_Coord, vec2 resolution, float t) {
+  return let_outer(Frag_Coord, resolution, t);
 }
 
 vec3 pow_(vec3 v, float e) {
@@ -100,7 +101,7 @@ void main() {
         vec2 Frag_Coord = local_frag_coord + sample_offset;
         vec2 resolution = viewport.zw;
         vec2 frag_coord = ((Frag_Coord - (0.5 * resolution)) / max_(resolution)) * 2.0;
-        vec4 this_sample = clamp(sample_(frag_coord, t), 0.0, 1.0);
+        vec4 this_sample = clamp(sample_(Frag_Coord, resolution, t), 0.0, 1.0);
         color += this_sample.rgb * this_sample.a;
         alpha += this_sample.a;
       }
@@ -112,4 +113,3 @@ void main() {
   }
   frag_color = vec4(pow_(color, 1.0 / gamma), alpha);
 }
-
