@@ -67,22 +67,25 @@ float perlin(vec2 point) {
   return 2.3 * n_xy;
 }
 
-float cloud_field(vec2 pos) {
-  return ((0.72 * perlin(pos)) + (0.21 * perlin((pos * 2.1) + vec2(9.2, 3.1)))) + (0.07 * perlin((pos * 4.2) + vec2(1.7, 15.3)));
+float terrain(vec2 pos) {
+  return (((0.6 * perlin(pos)) + (0.25 * perlin((pos * 2.03) + vec2(8.1, 4.7)))) + (0.11 * perlin((pos * 4.09) + vec2(2.8, 13.2)))) + (0.04 * perlin((pos * 8.17) + vec2(16.4, 1.3)));
 }
 
 vec4 let_outer(vec2 Frag_Coord, vec2 resolution, float t) {
   {
     vec2 uv = (Frag_Coord - (resolution * 0.5)) / resolution.y;
-    vec2 pos = ((uv * 3.8) + vec2(t * 0.028, (t * 0.028) * 0.18)) + vec2(4.2, 9.7);
-    float field = cloud_field(pos);
-    float shifted = cloud_field(pos + vec2(0.11, -0.09));
-    float cover = smoothstep(0.035, 0.175, field);
-    float shadow = smoothstep(0.035, 0.205, shifted);
-    vec3 blue = mix(vec3(0.32, 0.51, 0.64), vec3(0.25, 0.41, 0.54), shadow * 0.3);
-    float light = clamp(0.68 + ((field - shifted) * 2.2), 0.0, 1.0);
-    vec3 body = mix(vec3(0.68, 0.75, 0.79), vec3(0.96, 0.97, 0.95), light);
-    vec3 result = mix(blue, body, cover);
+    vec2 pos = ((uv * 3.0) + vec2(t * 0.012, (t * 0.012) * -0.35)) + vec2(3.1, 7.6);
+    float elevation = 0.5 + (0.65 * terrain(pos));
+    vec3 lowland = mix(vec3(0.24, 0.34, 0.29), vec3(0.48, 0.55, 0.4), smoothstep(0.2, 0.55, elevation));
+    vec3 land = mix(lowland, vec3(0.78, 0.77, 0.6), smoothstep(0.52, 0.8, elevation));
+    float neighbor = 0.5 + (0.65 * terrain(pos + vec2(0.015, 0.01)));
+    float relief = clamp(1.0 + ((elevation - neighbor) * 7.0), 0.72, 1.18);
+    float level = elevation * 12.0;
+    float distance_to_line = abs(fract(level + 0.5) - 0.5);
+    float pixel_width = max(0.012, 54.0 / resolution.y);
+    float line = 1.0 - smoothstep(pixel_width * 0.35, pixel_width * 1.3, distance_to_line);
+    vec3 shaded = land * relief;
+    vec3 result = mix(shaded, shaded * 0.72, line * 0.65);
     return vec4(result, 1.0);
   }
 }

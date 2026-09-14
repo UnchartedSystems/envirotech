@@ -67,22 +67,19 @@ float perlin(vec2 point) {
   return 2.3 * n_xy;
 }
 
-float cloud_field(vec2 pos) {
-  return ((0.72 * perlin(pos)) + (0.21 * perlin((pos * 2.1) + vec2(9.2, 3.1)))) + (0.07 * perlin((pos * 4.2) + vec2(1.7, 15.3)));
-}
-
 vec4 let_outer(vec2 Frag_Coord, vec2 resolution, float t) {
   {
     vec2 uv = (Frag_Coord - (resolution * 0.5)) / resolution.y;
-    vec2 pos = ((uv * 3.8) + vec2(t * 0.028, (t * 0.028) * 0.18)) + vec2(4.2, 9.7);
-    float field = cloud_field(pos);
-    float shifted = cloud_field(pos + vec2(0.11, -0.09));
-    float cover = smoothstep(0.035, 0.175, field);
-    float shadow = smoothstep(0.035, 0.205, shifted);
-    vec3 blue = mix(vec3(0.32, 0.51, 0.64), vec3(0.25, 0.41, 0.54), shadow * 0.3);
-    float light = clamp(0.68 + ((field - shifted) * 2.2), 0.0, 1.0);
-    vec3 body = mix(vec3(0.68, 0.75, 0.79), vec3(0.96, 0.97, 0.95), light);
-    vec3 result = mix(blue, body, cover);
+    vec2 pos = (uv * 5.5) + vec2(t * 0.018, (t * 0.018) * 0.3);
+    float bend = perlin(pos * 0.45);
+    float detail = perlin((pos * 1.2) + vec2(8.3, 2.7));
+    float phase = (((pos.x * 3.8) + (pos.y * 1.1)) + (bend * 3.0)) + (detail * 0.22);
+    float ridge = sin(phase);
+    float face = smoothstep(-0.25, 0.65, cos(phase));
+    vec3 sand = mix(vec3(0.48, 0.3, 0.16), vec3(0.83, 0.66, 0.43), face);
+    float crest = pow(0.5 * (ridge + 1.0), 18.0);
+    float ripples = (0.012 * sin((phase * 15.0) + (detail * 2.0))) * smoothstep(-0.3, 0.6, ridge);
+    vec3 result = (sand + (vec3(0.09, 0.075, 0.05) * crest)) + ripples;
     return vec4(result, 1.0);
   }
 }

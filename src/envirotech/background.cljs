@@ -6,7 +6,7 @@
   (resource/inline "shaders/vertex.glsl"))
 
 (def background-spec
-  (inline-bauble "test.janet"))
+  (inline-bauble "mountains.janet"))
 
 (def background-shader (:source background-spec))
 

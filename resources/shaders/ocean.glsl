@@ -67,22 +67,21 @@ float perlin(vec2 point) {
   return 2.3 * n_xy;
 }
 
-float cloud_field(vec2 pos) {
-  return ((0.72 * perlin(pos)) + (0.21 * perlin((pos * 2.1) + vec2(9.2, 3.1)))) + (0.07 * perlin((pos * 4.2) + vec2(1.7, 15.3)));
-}
-
 vec4 let_outer(vec2 Frag_Coord, vec2 resolution, float t) {
   {
     vec2 uv = (Frag_Coord - (resolution * 0.5)) / resolution.y;
-    vec2 pos = ((uv * 3.8) + vec2(t * 0.028, (t * 0.028) * 0.18)) + vec2(4.2, 9.7);
-    float field = cloud_field(pos);
-    float shifted = cloud_field(pos + vec2(0.11, -0.09));
-    float cover = smoothstep(0.035, 0.175, field);
-    float shadow = smoothstep(0.035, 0.205, shifted);
-    vec3 blue = mix(vec3(0.32, 0.51, 0.64), vec3(0.25, 0.41, 0.54), shadow * 0.3);
-    float light = clamp(0.68 + ((field - shifted) * 2.2), 0.0, 1.0);
-    vec3 body = mix(vec3(0.68, 0.75, 0.79), vec3(0.96, 0.97, 0.95), light);
-    vec3 result = mix(blue, body, cover);
+    vec2 pos = (uv * 5.0) + vec2(t * 0.012, t * 0.005);
+    float warp = perlin(pos * 0.65);
+    float detail = perlin((pos * 1.6) + vec2(7.8, 2.3));
+    float phase = (((pos.x * 3.0) + (pos.y * 5.0)) + (warp * 2.0)) + (t * -0.22);
+    float cross_phase = (((pos.x * -5.0) + (pos.y * 2.4)) + (detail * 0.7)) + (t * -0.15);
+    float swell = (0.76 * sin(phase)) + (0.24 * sin(cross_phase));
+    float slope = (0.76 * cos(phase)) + (0.24 * cos(cross_phase));
+    vec3 depth = mix(vec3(0.035, 0.16, 0.2), vec3(0.085, 0.31, 0.35), 0.5 * (swell + 1.0));
+    float sheen = 0.11 * pow(max(0.0, slope), 6.0);
+    float crest = smoothstep(0.75, 0.98, swell) * smoothstep(-0.15, 0.35, detail);
+    vec3 water = depth + (vec3(0.44, 0.66, 0.68) * sheen);
+    vec3 result = mix(water, vec3(0.55, 0.73, 0.72), crest * 0.36);
     return vec4(result, 1.0);
   }
 }
