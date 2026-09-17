@@ -1,32 +1,29 @@
-# Abstract overhead relief with fine contour lines and a quiet sage palette.
+# Abstract overhead relief with an elevation palette and printed halftone shading.
 # Layered 2D noise supplies elevation without ray marching.
 (def start-coords [1000 1000])
-(def pan-speed-x 0.12)
-(def pan-speed-y -0.08)
+(def pan-speed-x 0.08)
+(def pan-speed-y -0.06)
 (def map-scale 5.0)
 
 # Offset toward the light per band of height; larger offsets lengthen shadows.
-(def shadow-offset [0.055 0.010])
+(def shadow-offset [0.041 0.022])
 (def shadow-height 0.07)
 (def shadow-amount 0.28)
 
-(def contour-count 11.0)
+# Screen-space dots stay a consistent size as the terrain pans underneath.
+(def halftone-spacing 6.0)
+(def halftone-amount 0.32)
+(def halftone-ink [0.08 0.12 0.15])
 
 (def terrain-layers
   [{:impact 1.0 :scale .93 :offset [0.0 0.0]}
-   #{:impact 0.40 :scale 1.2 :offset [10.0 -7.0]}
    {:impact 0.15 :scale 2.1 :offset [80.0 50.0]}
    {:impact 0.15 :scale 2.11 :offset [79.0 51.0]}
    {:impact 0.05 :scale 4.0 :offset [2.8 13.2]}
    {:impact 0.05 :scale 4.0 :offset [2.8 13.2]}
    {:impact 0.05 :scale 8.1 :offset [16.4 1.3]}])
 
-(def terrain-layersx
-  [{:impact 1.0 :scale 1.0 :offset [0.0 0.0]}])
-
 (defn perlin-sum [pos layers]
-  # Perlin is bounded by [-1, 1]. Absolute impacts preserve that bound even
-  # with negative weights, but the combined noise need not reach either end.
   (var total 0.0)
   (var denominator 0.0)
   (each {:impact impact :scale scale :offset offset} layers
@@ -37,11 +34,29 @@
 (gl/defn :float terrain [:vec2 pos]
   (return ,(perlin-sum pos terrain-layers)))
 
-(defn mix3 [a b c amount]
-  (gl/let [u (clamp amount 0 1)]
-    (gl/if (< u 0.5)
-      (mix a b (* u 2))
-      (mix b c (- (* u 2) 1)))))
+# (defn terrain-color [height]
+#   (gl/let [valley (mix [0.07 0.20 0.26] [0.15 0.38 0.34]
+#                        (smoothstep 0.10 0.28 height))
+#            grass (mix valley [0.43 0.53 0.29] (smoothstep 0.28 0.45 height))
+#            ochre (mix grass [0.77 0.63 0.34] (smoothstep 0.45 0.58 height))
+#            clay (mix ochre [0.72 0.40 0.28] (smoothstep 0.58 0.72 height))]
+#     (mix clay [0.94 0.88 0.70] (smoothstep 0.72 0.91 height))))
+
+(defn terrain-color [height]
+  (gl/let [grass (mix [0.25 0.28 0.14] [0.43 0.53 0.29] (smoothstep 0.10 0.5 height))
+           ochre (mix grass [0.77 0.63 0.34] (smoothstep 0.5 0.7 height))]
+    (mix ochre [0.86 0.75 0.39] (smoothstep 0.7 0.9 height))))
+
+(defn halftone [color]
+  (gl/let [grid (/ (vec2 (dot Frag-Coord [0.8660254 -0.5])
+                          (dot Frag-Coord [0.5 0.8660254]))
+                   halftone-spacing)
+           cell (- (fract grid) 0.5)
+           luminance (dot color [0.2126 0.7152 0.0722])
+           radius (mix 0.10 0.38 (- 1.0 (clamp luminance 0 1)))
+           edge (/ 0.75 halftone-spacing)
+           dots (- 1.0 (smoothstep (- radius edge) (+ radius edge) (length cell)))]
+    (mix color halftone-ink (* halftone-amount dots))))
 
 (defn first-below [numbers value fallback]
   (var output fallback)
@@ -50,8 +65,8 @@
   output)
 
 (gl/defn :float terrain-band [:vec2 pos]
-  (return ,(first-below [0.8 0.72 0.65 0.58 0.5 0.42 0.35 0.28 0.2 0.1 0.0]
-                       (+ 0.5 (terrain pos)) 0.91)))
+  (return ,(first-below [0.8 0.72 0.65 0.58 0.5 0.42 0.35 0.28 0.2 0.1]
+                       (+ 0.5 (terrain pos)) 0.86)))
 
 (defn band-shadow [pos band]
   # Three fixed lightward probes approximate the stepped terrain silhouette.
@@ -72,6 +87,6 @@
        band (terrain-band pos)
        shadow (band-shadow pos band)
       
-       result (mix3 [0.21 0.30 0.26] [0.42 0.48 0.34] [0.70 0.74 0.62] (smoothstep 0.1 1.0 band))]
+       result (* (terrain-color band) (- 1.0 (* shadow-amount shadow)))]
       
-      (vec4 (* result (- 1.0 (* shadow-amount shadow))) 1.0)))
+      (vec4 (halftone result) 1.0)))

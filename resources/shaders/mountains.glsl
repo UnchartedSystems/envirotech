@@ -72,29 +72,42 @@ float terrain(vec2 pos) {
 }
 
 float terrain_band(vec2 pos) {
-  return ((0.5 + terrain(pos)) < 0.0) ? 0.0 : (((0.5 + terrain(pos)) < 0.1) ? 0.1 : (((0.5 + terrain(pos)) < 0.2) ? 0.2 : (((0.5 + terrain(pos)) < 0.28) ? 0.28 : (((0.5 + terrain(pos)) < 0.35) ? 0.35 : (((0.5 + terrain(pos)) < 0.42) ? 0.42 : (((0.5 + terrain(pos)) < 0.5) ? 0.5 : (((0.5 + terrain(pos)) < 0.58) ? 0.58 : (((0.5 + terrain(pos)) < 0.65) ? 0.65 : (((0.5 + terrain(pos)) < 0.72) ? 0.72 : (((0.5 + terrain(pos)) < 0.8) ? 0.8 : 0.91))))))))));
+  return ((0.5 + terrain(pos)) < 0.1) ? 0.1 : (((0.5 + terrain(pos)) < 0.2) ? 0.2 : (((0.5 + terrain(pos)) < 0.28) ? 0.28 : (((0.5 + terrain(pos)) < 0.35) ? 0.35 : (((0.5 + terrain(pos)) < 0.42) ? 0.42 : (((0.5 + terrain(pos)) < 0.5) ? 0.5 : (((0.5 + terrain(pos)) < 0.58) ? 0.58 : (((0.5 + terrain(pos)) < 0.65) ? 0.65 : (((0.5 + terrain(pos)) < 0.72) ? 0.72 : (((0.5 + terrain(pos)) < 0.8) ? 0.8 : 0.86)))))))));
 }
 
 vec3 let_outer(float band) {
   {
-    float u = clamp(smoothstep(0.1, 1.0, band), 0.0, 1.0);
-    return (u < 0.5) ? mix(vec3(0.21, 0.3, 0.26), vec3(0.42, 0.48, 0.34), u * 2.0) : mix(vec3(0.42, 0.48, 0.34), vec3(0.7, 0.74, 0.62), (u * 2.0) - 1.0);
+    vec3 grass = mix(vec3(0.25, 0.28, 0.14), vec3(0.43, 0.53, 0.29), smoothstep(0.1, 0.5, band));
+    vec3 ochre = mix(grass, vec3(0.77, 0.63, 0.34), smoothstep(0.5, 0.7, band));
+    return mix(ochre, vec3(0.86, 0.75, 0.39), smoothstep(0.7, 0.9, band));
   }
 }
 
-vec4 let_outer1(vec2 Frag_Coord, vec2 resolution, float t) {
+vec3 let_outer1(vec2 Frag_Coord, vec3 result) {
+  {
+    vec2 grid = vec2(dot(Frag_Coord, vec2(0.8660254, -0.5)), dot(Frag_Coord, vec2(0.5, 0.8660254))) / 6.0;
+    vec2 cell = fract(grid) - 0.5;
+    float luminance = dot(result, vec3(0.2126, 0.7152, 0.0722));
+    float radius = mix(0.1, 0.38, 1.0 - clamp(luminance, 0.0, 1.0));
+    float edge = 0.125;
+    float dots = 1.0 - smoothstep(radius - edge, radius + edge, length(cell));
+    return mix(result, vec3(0.08, 0.12, 0.15), 0.32 * dots);
+  }
+}
+
+vec4 let_outer2(vec2 Frag_Coord, vec2 resolution, float t) {
   {
     vec2 uv = Frag_Coord / max(resolution.x, resolution.y);
-    vec2 pos = ((uv * 5.0) + vec2(t * 0.12, t * -0.08)) + vec2(1000.0, 1000.0);
+    vec2 pos = ((uv * 5.0) + vec2(t * 0.08, t * -0.06)) + vec2(1000.0, 1000.0);
     float band = terrain_band(pos);
-    float shadow = max(max(max(0.0, step(band + 0.035, terrain_band(pos + vec2(0.0275, 0.005)))), step(band + 0.105, terrain_band(pos + vec2(0.0825, 0.015)))), step(band + 0.21, terrain_band(pos + vec2(0.165, 0.03))));
-    vec3 result = let_outer(band);
-    return vec4(result * (1.0 - (0.28 * shadow)), 1.0);
+    float shadow = max(max(max(0.0, step(band + 0.035, terrain_band(pos + vec2(0.0205, 0.011)))), step(band + 0.105, terrain_band(pos + vec2(0.0615, 0.033)))), step(band + 0.21, terrain_band(pos + vec2(0.123, 0.066))));
+    vec3 result = let_outer(band) * (1.0 - (0.28 * shadow));
+    return vec4(let_outer1(Frag_Coord, result), 1.0);
   }
 }
 
 vec4 sample_(vec2 Frag_Coord, vec2 resolution, float t) {
-  return let_outer1(Frag_Coord, resolution, t);
+  return let_outer2(Frag_Coord, resolution, t);
 }
 
 vec3 pow_(vec3 v, float e) {
