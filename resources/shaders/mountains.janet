@@ -3,13 +3,12 @@
 (def start-coords [1000 1000])
 (def pan-speed-x 0.12)
 (def pan-speed-y -0.08)
-(def map-scale 5
-  .0)
+(def map-scale 5.0)
 
-(def shade-offset [0.055 0.010])
-(def shade-amount? 0.42)
-(def shademap-min 0.7)
-(def shademap-max 1.2)
+# Offset toward the light per band of height; larger offsets lengthen shadows.
+(def shadow-offset [0.055 0.010])
+(def shadow-height 0.07)
+(def shadow-amount 0.28)
 
 (def contour-count 11.0)
 
@@ -50,14 +49,29 @@
     (set output (gl/if (< value number) number output)))
   output)
 
+(gl/defn :float terrain-band [:vec2 pos]
+  (return ,(first-below [0.8 0.72 0.65 0.58 0.5 0.42 0.35 0.28 0.2 0.1 0.0]
+                       (+ 0.5 (terrain pos)) 0.91)))
+
+(defn band-shadow [pos band]
+  # Three fixed lightward probes approximate the stepped terrain silhouette.
+  # Compare against a rising light ray so taller bands cast farther. Combining
+  # with max keeps overlapping shadows flat instead of darkening them again.
+  (var shadow 0.0)
+  (each distance [0.5 1.5 3.0]
+    (set shadow
+         (max shadow
+              (step (+ band (* distance shadow-height))
+                    (terrain-band (+ pos (* shadow-offset distance)))))))
+  shadow)
+
 (set background-color
      (gl/let
       [uv (/ Frag-Coord (max resolution.x resolution.y))
        pos (+ (* uv map-scale) [(* t pan-speed-x) (* t pan-speed-y)] start-coords)
-       elevation (/ (+ .5 (terrain pos)) 1.0)
-
-       band (first-below [0.8 0.72 0.65 0.58 0.5 0.42 0.35 0.28 0.2 0.1 0.0] elevation 0.91)
+       band (terrain-band pos)
+       shadow (band-shadow pos band)
       
        result (mix3 [0.21 0.30 0.26] [0.42 0.48 0.34] [0.70 0.74 0.62] (smoothstep 0.1 1.0 band))]
       
-      (vec4 result 1.0)))
+      (vec4 (* result (- 1.0 (* shadow-amount shadow))) 1.0)))

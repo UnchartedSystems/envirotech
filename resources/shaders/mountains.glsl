@@ -71,6 +71,10 @@ float terrain(vec2 pos) {
   return ((((((0.0 + (1.0 * perlin((pos * 0.93) + vec2(0.0, 0.0)))) + (0.15 * perlin((pos * 2.1) + vec2(80.0, 50.0)))) + (0.15 * perlin((pos * 2.11) + vec2(79.0, 51.0)))) + (0.05 * perlin((pos * 4.0) + vec2(2.8, 13.2)))) + (0.05 * perlin((pos * 4.0) + vec2(2.8, 13.2)))) + (0.05 * perlin((pos * 8.1) + vec2(16.4, 1.3)))) / 1.45;
 }
 
+float terrain_band(vec2 pos) {
+  return ((0.5 + terrain(pos)) < 0.0) ? 0.0 : (((0.5 + terrain(pos)) < 0.1) ? 0.1 : (((0.5 + terrain(pos)) < 0.2) ? 0.2 : (((0.5 + terrain(pos)) < 0.28) ? 0.28 : (((0.5 + terrain(pos)) < 0.35) ? 0.35 : (((0.5 + terrain(pos)) < 0.42) ? 0.42 : (((0.5 + terrain(pos)) < 0.5) ? 0.5 : (((0.5 + terrain(pos)) < 0.58) ? 0.58 : (((0.5 + terrain(pos)) < 0.65) ? 0.65 : (((0.5 + terrain(pos)) < 0.72) ? 0.72 : (((0.5 + terrain(pos)) < 0.8) ? 0.8 : 0.91))))))))));
+}
+
 vec3 let_outer(float band) {
   {
     float u = clamp(smoothstep(0.1, 1.0, band), 0.0, 1.0);
@@ -82,10 +86,10 @@ vec4 let_outer1(vec2 Frag_Coord, vec2 resolution, float t) {
   {
     vec2 uv = Frag_Coord / max(resolution.x, resolution.y);
     vec2 pos = ((uv * 5.0) + vec2(t * 0.12, t * -0.08)) + vec2(1000.0, 1000.0);
-    float elevation = (0.5 + terrain(pos)) / 1.0;
-    float band = (elevation < 0.0) ? 0.0 : ((elevation < 0.1) ? 0.1 : ((elevation < 0.2) ? 0.2 : ((elevation < 0.28) ? 0.28 : ((elevation < 0.35) ? 0.35 : ((elevation < 0.42) ? 0.42 : ((elevation < 0.5) ? 0.5 : ((elevation < 0.58) ? 0.58 : ((elevation < 0.65) ? 0.65 : ((elevation < 0.72) ? 0.72 : ((elevation < 0.8) ? 0.8 : 0.91))))))))));
+    float band = terrain_band(pos);
+    float shadow = max(max(max(0.0, step(band + 0.035, terrain_band(pos + vec2(0.0275, 0.005)))), step(band + 0.105, terrain_band(pos + vec2(0.0825, 0.015)))), step(band + 0.21, terrain_band(pos + vec2(0.165, 0.03))));
     vec3 result = let_outer(band);
-    return vec4(result, 1.0);
+    return vec4(result * (1.0 - (0.28 * shadow)), 1.0);
   }
 }
 
