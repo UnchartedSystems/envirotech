@@ -68,22 +68,22 @@ float perlin(vec2 point) {
 }
 
 float terrain(vec2 pos) {
-  return (((1.0 * perlin(pos)) + (0.25 * perlin((pos * 2.03) + vec2(8.1, 4.7)))) + (0.11 * perlin((pos * 4.09) + vec2(2.8, 13.2)))) + (0.04 * perlin((pos * 5.17) + vec2(16.4, 1.3)));
+  return ((((((0.0 + (1.0 * perlin((pos * 0.93) + vec2(0.0, 0.0)))) + (0.15 * perlin((pos * 2.1) + vec2(80.0, 50.0)))) + (0.15 * perlin((pos * 2.11) + vec2(79.0, 51.0)))) + (0.05 * perlin((pos * 4.0) + vec2(2.8, 13.2)))) + (0.05 * perlin((pos * 4.0) + vec2(2.8, 13.2)))) + (0.05 * perlin((pos * 8.1) + vec2(16.4, 1.3)))) / 1.45;
 }
 
 vec3 let_outer(float band) {
   {
-    float u = clamp(smoothstep(0.0, 1.0, band), 0.0, 1.0);
-    return (u < 0.5) ? mix(vec3(0.24, 0.34, 0.29), vec3(0.48, 0.55, 0.4), u * 2.0) : mix(vec3(0.48, 0.55, 0.4), vec3(0.78, 0.77, 0.6), (u * 2.0) - 1.0);
+    float u = clamp(smoothstep(0.1, 1.0, band), 0.0, 1.0);
+    return (u < 0.5) ? mix(vec3(0.21, 0.3, 0.26), vec3(0.42, 0.48, 0.34), u * 2.0) : mix(vec3(0.42, 0.48, 0.34), vec3(0.7, 0.74, 0.62), (u * 2.0) - 1.0);
   }
 }
 
 vec4 let_outer1(vec2 Frag_Coord, vec2 resolution, float t) {
   {
     vec2 uv = Frag_Coord / max(resolution.x, resolution.y);
-    vec2 pos = ((uv * 6.0) + vec2(t * 0.12, t * -0.08)) + vec2(1000.0, 1000.0);
-    float elevation = (1.0 + terrain(pos)) / 2.05;
-    float band = (elevation < 0.0) ? 0.0 : ((elevation < 0.1) ? 0.1 : ((elevation < 0.2) ? 0.2 : ((elevation < 0.3) ? 0.3 : ((elevation < 0.4) ? 0.4 : ((elevation < 0.5) ? 0.5 : ((elevation < 0.6) ? 0.6 : ((elevation < 0.7) ? 0.7 : ((elevation < 0.8) ? 0.8 : ((elevation < 0.9) ? 0.9 : ((elevation < 0.95) ? 0.95 : 1.0))))))))));
+    vec2 pos = ((uv * 5.0) + vec2(t * 0.12, t * -0.08)) + vec2(1000.0, 1000.0);
+    float elevation = (0.5 + terrain(pos)) / 1.0;
+    float band = (elevation < 0.0) ? 0.0 : ((elevation < 0.1) ? 0.1 : ((elevation < 0.2) ? 0.2 : ((elevation < 0.28) ? 0.28 : ((elevation < 0.35) ? 0.35 : ((elevation < 0.42) ? 0.42 : ((elevation < 0.5) ? 0.5 : ((elevation < 0.58) ? 0.58 : ((elevation < 0.65) ? 0.65 : ((elevation < 0.72) ? 0.72 : ((elevation < 0.8) ? 0.8 : 0.91))))))))));
     vec3 result = let_outer(band);
     return vec4(result, 1.0);
   }
